@@ -5,11 +5,11 @@ import contextlib
 from datetime import datetime, timedelta
 import pytz
 
-date_query_template = "SELECT Datetime FROM {table} ORDER BY datetime ASC LIMIT 1"
+date_query_template = "SELECT Datetime FROM {table} ORDER BY Datetime ASC LIMIT 1"
 #"SELECT Datetime FROM AAPL ORDER BY Datetime ASC LIMIT 1"
 
 insert_stock_info = """
-INSERT INTO TICKER (TIME, Open, Close, High, Low, Volume )
+INSERT INTO TICKER (Datetime, Open, Close, High, Low, Volume )
 """
 
 
@@ -33,12 +33,14 @@ def create_db():
                     )""")
     with sqlite3.connect("stock_price.db") as temp_conn:
         temp_cursor = temp_conn.cursor()
-        temp_cursor.execute("""CREATE TABLE IF NOT EXISTS Dummy (
-                Datetime TEXT NULL,
-                Ticker TEXT DUMMY,
-                Price TEXT NULL,
+        temp_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Dummy (
+                Datetime TEXT PRIMARY KEY,
+                Ticker TEXT NULL,
                 Open TEXT NULL,
                 Close TEXT NULL,
+                Low TEXT NULL,
+                High TEXT NULL,
                 Volume TEXT NULL
             )""")
         temp_conn.commit()
@@ -46,10 +48,10 @@ def create_db():
     with sqlite3.connect("stock_info.db") as temp_conn:
         temp_cursor = temp_conn.cursor()
         temp_cursor.execute("""CREATE TABLE IF NOT EXISTS Dummy (
-                            Ticker TEXT DUMMY
+                            ticker TEXT DUMMY
                             PER INT NULL,
                             PBR INT NULL,
-                            MARKET_SHARE INT NULL
+                            share INT NULL
                             )
             """)
     with sqlite3.connect("weights.db") as temp_conn:
@@ -108,9 +110,7 @@ def get_stock(name_ticker: str) -> pd.DataFrame:
     else:
 
         temp_ticker = yf.Ticker(name_ticker)   # This is a Ticker object
-        temp_data = temp_ticker.history(period="30d", interval="5m")[['Open', 'Close', 'High', 'Low', 'Volume']]
-        temp_data = temp_data.reset_index()
-
+        temp_data = temp_ticker.history(period="60d", interval="5m")[['Open', 'Close', 'High', 'Low', 'Volume']]
         ####
         #check whether data exists in local stock.db
         with sqlite3.connect('stock_price.db') as temp_conn:
@@ -119,25 +119,23 @@ def get_stock(name_ticker: str) -> pd.DataFrame:
                 temp_cursor = temp_conn.cursor()
                 date_query = date_query_template.format(table=name_ticker)
                 temp_cursor.execute(date_query)
+                db_earlist_date = pd.to_datetime(temp_cursor.fetchone()[0], format = '%Y-%m-%d %H:%M:%S%z')
 
-                db_latest_date = pd.to_datetime(temp_cursor.fetchone()[0], format = '%Y-%m-%d %H:%M:%S%z')
-                
-                filtered = temp_data[pd.to_datetime(temp_data['Datetime']) <= db_latest_date]
+                filtered = temp_data[temp_data.index < db_earlist_date]
+
                 i = filtered.index[-1] if not filtered.empty else None
-                
                 if not i:
                     print(f" DB is already up-to-date for {name_ticker}")
                     return temp_data
-                
-                temp_data = temp_data.loc[0: i]
-                print(temp_data)
-                temp_data.to_sql(name_ticker, temp_conn, if_exists='append', index=False)
+                temp_data = temp_data.loc[:i]
+                temp_data.to_sql(name_ticker, temp_conn, if_exists='append', index=True)
+                print(f"the earlist date in data base: {db_earlist_date}, Earliest date requiring update: {filtered.index[0]}")
                 print(f" Inserted {len(temp_data)} new rows for {name_ticker}")
 
 
             except:
                 try:
-                    temp_data.to_sql(name_ticker, temp_conn, if_exists = 'append', index =False)
+                    temp_data.to_sql(name_ticker, temp_conn, if_exists = 'append', index =True)
                 except:
                     print("ERROR: UNABLE TO INSERT DATA INTO .DB")
                     print("stock_price.db file might have been damaged please run the repair function")

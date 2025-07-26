@@ -1,6 +1,8 @@
 from __init__ import pd, sqlite3, yf
 import data_loader
 import stock_utils
+import numpy as np
+import matplotlib.pyplot as plt
 #Stock market price analysing program for 
 #1. day trading (1 day frame )
 #1. a week trading (a week frame)
@@ -14,7 +16,4 @@ import stock_utils
 #visualizer.py contains functions to visualize python data. 
 
 data_loader.create_db()
-mystock = stock_utils.Stock.from_ticker("META")
-mystock.avg_approximation()
-print(mystock.df.head(70))
-print(mystock.other_df.head(50))
+mystock = stock_utils.Stock.from_ticker("AMZN")
