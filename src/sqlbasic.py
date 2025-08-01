@@ -4,6 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import data_loader_helpers
 import data_loader
+import streamlit as st
+import pandas as pd
+
+
+
+
 #Stock market price analysing program for 
 #1. day trading (1 day frame )
 #1. a week trading (a week frame)
@@ -25,10 +31,32 @@ c= data_loader_helpers.load_multiple_tickers("example.db")
 #print(type(c))
 print(c)      # Should be 'Stock(some_name)' if __repr__ works
 #data_loader_helpers.load_multiple_tickers('AMZN', 'AAPL', 'APPL')
+df = c[0].df.reset_index()
+st.bar_chart(df.set_index('Datetime')['Volume'])
+
+start_day = pd.Timestamp(c[0].df.index.get_level_values("Datetime").min().date())
+end_day = pd.Timestamp(c[0].df.index.get_level_values("Datetime").max().date())
+current_day = start_day
+#print(current_day)
+#print(start_day)
+#print(end_day)
+'''
+idx = pd.IndexSlice # Create an object to more easily perform multi-index slicing.
+while current_day<= end_day:
+    start_time = current_day + pd.Timedelta(hours=9, minutes=30)
+    end_time = current_day + pd.Timedelta(hours=16)
+    day_data = c[0].df.loc[idx[:, start_time:end_time], :]
+    print(f"ssdsd: {day_data}")
+    current_day += pd.Timedelta(days = 1)
 
 
-import matplotlib.pyplot as plt
-fig = plt.figure()             # an empty figure with no Axes
-fig, ax = plt.subplots()       # a figure with a single Axes
 
-#plt.show() 
+plt.figure(figsize=(10, 5))
+dates = c[0].df.index.get_level_values('Datetime')
+plt.plot(dates, c[0].df['Close'])  # assuming 'Close' is your y-axis
+plt.xlabel('Date')
+plt.ylabel('Close Price')
+plt.title('Stock Price Over Time')
+plt.xticks(rotation=45)  # optional: rotate dates
+plt.tight_layout()
+plt.show()'''

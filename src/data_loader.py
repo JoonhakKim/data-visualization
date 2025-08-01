@@ -1,4 +1,6 @@
-from __init__ import pd, sqlite3, yf
+import pandas as pd
+import sqlite3
+import yfinance as yf
 import sys
 import numpy as np
 import contextlib
@@ -6,6 +8,11 @@ from datetime import datetime, timedelta
 import pytz
 from pathlib import Path
 
+
+
+
+#################SOME STRING VALUES#################
+####################################################
 file_path = Path(__file__).resolve().parent
 db_path = str(file_path.parents[0] / 'Database')
 
@@ -18,7 +25,8 @@ INSERT INTO meta_data (ticker, name, sector, exchange)
 insert_stock_info = """
 INSERT INTO TICKER (ticker, Datetime, Open, Close, High, Low, Volume )
 """
-
+#######################################################
+#######################################################
 
 def log_stdout_stderr_to():
     with open("yfErrorLog", 'a') as log_file:
@@ -130,17 +138,22 @@ def ticker_exists(name_to_check: str) -> bool:
 # and updates the data into a local SQLite database.
 # It is particularly useful for fetching long-term static data (e.g., more than one day)
 # for comparative analysis or backtesting purposes.
+# often used only for the first time retriving a stock info.
 def get_stock(name_ticker: str) -> pd.DataFrame:
     name_ticker = name_ticker.upper()
     if ticker_exists(name_ticker) == False:
         return None
     else:
 
-        temp_ticker = yf.Ticker(name_ticker)   # This is a Ticker object
+        #call yf ticker information.
+        temp_ticker = yf.Ticker(name_ticker)   
         temp_data = temp_ticker.history(period="60d", interval="5m")[['Open', 'Close', 'High', 'Low', 'Volume']]
         temp_data['ticker'] = name_ticker
         temp_data = temp_data.reset_index().set_index(['ticker', 'Datetime'])
-        ####
+        #since yf automatically make the dateframe timezone aware, drop the timezone since the program doesn't really need it
+        temp_data.index = temp_data.index.set_levels(temp_data.index.levels[1].tz_localize(None), level=1)
+
+
         #check whether data exists in local stock.db
         with sqlite3.connect(db_path + '/stock_price.db') as temp_conn:
             try:
@@ -150,7 +163,6 @@ def get_stock(name_ticker: str) -> pd.DataFrame:
                 temp_cursor.execute(date_query)
                 db_earlist_date = pd.to_datetime(temp_cursor.fetchone()[0], errors = 'coerce')
                 filtered = temp_data[temp_data.index.get_level_values('Datetime') < db_earlist_date]
-
                 i = filtered.index[-1] if not filtered.empty else None
                 if not i:
                     print(f" DB is already up-to-date for {name_ticker}")
@@ -161,13 +173,12 @@ def get_stock(name_ticker: str) -> pd.DataFrame:
                 temp_data.to_sql('price_data', temp_conn, if_exists='append', index=True)
                 print(f"the earlist date in data base: {db_earlist_date}, Earliest date requiring update: {filtered.index[0]}")
                 print(f" Inserted {len(temp_data)} new rows for {name_ticker}")
-
             except:
                 try:
                     temp_data.to_sql('price_data', temp_conn, if_exists = 'append', index =True, index_label =['ticker', 'Datetime'])
                     print(f"Data has been successfully saved to the local stocks.db for {name_ticker}")
                 except:
-                    print("ERROR: UNABLE TO INSERT DATA INTO .DB")
+                    print(f"ERROR: UNABLE TO INSERT DATA INTO stock_price.db at {db_path}")
                     print("stock_price.db file might have been damaged please run the repair function")
                     return None
             

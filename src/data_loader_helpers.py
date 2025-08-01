@@ -4,6 +4,7 @@ import sqlite3
 import pandas as pd
 import stock_utils
 from pathlib import Path
+
 #interface script for data_loader
 
 
@@ -55,5 +56,4 @@ def load_multiple_tickers(data, *args, **kwargs) -> list['myclass']:
     stock for ticker in b
     if (stock := stock_utils.Stock.from_ticker(ticker)) is not None
     ]
-
     return c

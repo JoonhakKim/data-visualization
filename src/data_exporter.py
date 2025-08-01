@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-fig = plt.figure()             # an empty figure with no Axes
-fig, ax = plt.subplots()       # a figure with a single Axes
+#this data_exporter is only for local visualization for me 
+#not to be updated on the web
 
-plt.show() 
