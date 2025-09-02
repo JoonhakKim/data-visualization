@@ -14,6 +14,17 @@ group_interval:
     group_interval: 30T
     last_interval: 20T
 
+Volume_weights:
+  volume-volatility: 10
+  volume-upper: 20
+  volume-lower: 15
+
+Linearization_weight:
+  linearization-upper:
+  linearization-lower:
+  
+
+
 industry_type:
   default:
     - DUMMY
