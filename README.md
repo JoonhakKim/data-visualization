@@ -1,3 +1,17 @@
+Personal Project
+
+Using Python, Pandas, NumPy, Matplotlib, and SQLite to visualize and analyze stock price data.
+########
+So far...
+
+The program retrieves stock data from .yfinance API and stores it in a local SQLite database.
+
+By default, it loads data from the local database unless specifically told to update via .yfinance API.
+
+Retrieved data is automatically processed to compute seful metrics and variables such as volume-adjusted prices, percentage price changes, and more.
+######
+
+
 
 #Near-term goals include:
 
@@ -25,3 +39,4 @@ Looking Ahead
   Integrating the OpenAI API to refine distributions and improve sample mean selection.
 
   Building a lightweight backend and frontend to display data on a customizable webpage.
+
